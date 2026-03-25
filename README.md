@@ -1,5 +1,8 @@
 # agentskills-context-injection
 
+[![Blackwell Systems™](https://raw.githubusercontent.com/blackwell-systems/blackwell-docs-theme/main/badge-trademark.svg)](https://github.com/blackwell-systems)
+[![Agent Skills](assets/badge-agentskills.svg)](https://agentskills.io)
+
 Context injection for [Agent Skills](https://agentskills.io) progressive disclosure. Automatically loads reference files into model context based on trigger patterns declared in skill frontmatter.
 
 ## The Problem
