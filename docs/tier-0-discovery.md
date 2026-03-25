@@ -65,21 +65,21 @@ A Tier 0 entry is a minimal index --just enough for the model to route the user 
 - Reference material (Tier 3)
 - Anything duplicating content from the skill's frontmatter or SKILL.md
 
-The heuristic: if removing it from the index would prevent the model from routing to the skill, it belongs. Everything else is Tier 2 or Tier 3.
+The heuristic: if removing it from the index would prevent the model from routing to the skill, it belongs. Everything else is Instructions tier or Resources tier.
 
 ## The Four-Tier Model
 
 With Tier 0, the full progressive disclosure stack is:
 
-| Tier | What | When | Token cost | Where |
-|------|------|------|------------|-------|
-| 0 --Discovery | Skill index | Session start | ~20-50 tokens per skill | Project config (CLAUDE.md, .cursorrules, etc.) |
-| 1 --Metadata | Name + description | Session start | ~50-100 tokens per skill | SKILL.md frontmatter |
-| 2 --Instructions | Full SKILL.md body | Skill activation | <5000 tokens | SKILL.md body |
-| 3 --Resources | Reference files | Trigger match | Varies | `references/`, `scripts/`, `assets/` |
+| Layer | Spec name | What | When | Token cost | Where |
+|-------|-----------|------|------|------------|-------|
+| Discovery | *(extension)* | Skill index | Session start | ~20-50 tokens per skill | Project config (CLAUDE.md, .cursorrules, etc.) |
+| 1 | **Metadata** | Name + description | Session start | ~50-100 tokens per skill | SKILL.md frontmatter |
+| 2 | **Instructions** | Full SKILL.md body | Skill activation | <5000 tokens | SKILL.md body |
+| 3 | **Resources** | Reference files | Trigger match | Varies | `references/`, `scripts/`, `assets/` |
 
-Tier 0 and Tier 1 are both loaded at startup, but they serve different audiences:
-- **Tier 0** is for the user and the model's routing logic --"what skills exist and when to use them"
+The Discovery layer and the Metadata tier are both loaded at startup, but they serve different audiences:
+- **Discovery** is for the user and the model's routing logic — "what skills exist and when to use them"
 - **Tier 1** is for the agent harness --structured metadata for catalog building and tool registration
 
 ## Tier 0 as a Multi-Skill Index

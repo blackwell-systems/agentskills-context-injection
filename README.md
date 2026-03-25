@@ -11,7 +11,7 @@ Every major Agent Skills-compatible platform has independently built a pre-invoc
 
 **Scope: dispatch-time subcommand triggers only.** If you know at invocation time which subcommand is being called, this handles it deterministically. Mid-execution references that depend on runtime state (e.g. failure routing after agents report back) are out of scope — the hook fires before execution begins.
 
-> Uses existing Agent Skills conventions (`scripts/`, `references/`, `metadata:`). Spec-level proposal with reference implementation for Claude Code (`UserPromptSubmit`); the same pattern applies directly to Gemini CLI (`BeforeAgent`), OpenAI Codex (`UserPromptSubmit`), Cursor (`beforeSubmitPrompt`), and OpenCode (`chat.message`).
+> Works today via YAML extensibility — platforms that understand `triggers:` act on it, others ignore it. The proposal asks the spec to formally recognize `triggers:` as a top-level field. Reference implementation for Claude Code (`UserPromptSubmit`); the same pattern applies to Gemini CLI (`BeforeAgent`), OpenAI Codex (`UserPromptSubmit`), Cursor (`beforeSubmitPrompt`), and OpenCode (`chat.message`).
 
 ## How it works
 
@@ -32,7 +32,7 @@ One line in `SKILL.md`: "run `scripts/inject-context` with the user's prompt bef
 
 ## Trigger Definitions
 
-Skills declare triggers in YAML frontmatter using the `triggers:` field (via the spec's `metadata:` extension point):
+Skills declare triggers in YAML frontmatter using a top-level `triggers:` field:
 
 ```yaml
 ---
@@ -162,25 +162,26 @@ Users get the best available layer. No regression at any level.
 
 ## Spec Alignment
 
-This project uses only conventions the Agent Skills spec already defines:
+This project uses existing Agent Skills conventions:
 - `scripts/` directory for executable code ([spec](https://agentskills.io/skill-creation/using-scripts))
 - `references/` directory for on-demand content ([spec](https://agentskills.io/specification#references))
-- Frontmatter extensibility for custom fields ([spec](https://agentskills.io/specification#metadata-field))
 
-The `triggers:` field is declared at the top level of the skill frontmatter rather than nested under `metadata:`. Top-level placement signals that it is intended for platform consumption — the hook reads it before the model runs — not just passive skill metadata. Agents that don't understand `triggers:` ignore it with no behavior change.
+**Today:** `triggers:` is a top-level frontmatter field. The spec does not currently define it, but YAML parsers ignore unknown fields — platforms that understand `triggers:` act on it; those that don't ignore it with no behavior change. The alternative (`metadata: triggers:`) is a poor fit because the spec defines `metadata:` as a map of string key-value pairs, and `triggers:` requires structured list data.
 
-The constrained trigger format (see [Trigger Format Constraints](#trigger-format-constraints)) is itself a spec-level decision: by restricting `triggers:` to a portable subset of YAML, any platform can implement a conforming parser without a YAML library dependency. This keeps the standard accessible to implementations in any language or runtime.
+**The proposal:** Ask the spec to formally recognize `triggers:` as a top-level field intended for platform consumption — distinct from `metadata:` (passive author-defined data) because `triggers:` is read by platform hooks before the model runs, not passed through to the model as context.
 
-## The Four-Tier Model
+The constrained trigger format (see [Trigger Format Constraints](#trigger-format-constraints)) is a deliberate portability decision: any platform can implement a conforming parser without a YAML library. This keeps the standard accessible to implementations in any language or runtime.
 
-The Agent Skills spec defines three tiers. This project documents a fourth — **Tier 0 (Discovery)** — that sits outside the skill in project config files (`CLAUDE.md`, `.cursorrules`, etc.):
+## Progressive Disclosure Model
 
-| Tier | What | When loaded |
-|------|------|-------------|
-| 0 — Discovery | Skill index in project config | Session start (always in context) |
-| 1 — Metadata | Name + description from frontmatter | Session start (catalog) |
-| 2 — Instructions | Full SKILL.md body | Skill activation |
-| 3 — Resources | Reference files via triggers | **Subcommand dispatch** (this project) |
+The Agent Skills spec defines three progressive disclosure tiers. This project adds a Discovery layer and provides deterministic loading for the Resources tier:
+
+| Layer | Spec name | What | When loaded |
+|-------|-----------|------|-------------|
+| Discovery | *(extension)* | Skill index in project config (`CLAUDE.md`, `.cursorrules`, etc.) | Session start (always in context) |
+| 1 | **Metadata** | `name` + `description` from frontmatter | Session start (catalog) |
+| 2 | **Instructions** | Full `SKILL.md` body | Skill activation |
+| 3 | **Resources** | Reference files via `triggers:` | **Subcommand dispatch** (this project) |
 
 See [`docs/tier-0-discovery.md`](docs/tier-0-discovery.md) for the full Tier 0 pattern.
 
