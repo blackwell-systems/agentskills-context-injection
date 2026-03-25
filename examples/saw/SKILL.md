@@ -6,6 +6,11 @@ triggers:
     inject: references/program-flow.md
   - match: "^/saw amend"
     inject: references/amend-flow.md
+  # failure-routing.md is intentionally NOT triggered here. It's a mid-execution
+  # reference loaded after agents report back, not at dispatch time. The skill
+  # body contains "failure", "blocked", etc. which would false-positive on every
+  # invocation since UserPromptSubmit receives the expanded prompt.
+  # Verify with: bash scripts/validate-triggers
 ---
 
 # Scout-and-Wave: Parallel Agent Coordination

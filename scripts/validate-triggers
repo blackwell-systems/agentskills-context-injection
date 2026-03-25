@@ -1,0 +1,107 @@
+#!/usr/bin/env bash
+# validate-triggers — check trigger patterns for false-positive risk
+#
+# Reads triggers from a skill's YAML frontmatter and tests each regex
+# against the skill's own SKILL.md body. Patterns that match the body
+# will fire on every invocation when a pre-invocation hook receives
+# the expanded prompt (which includes the full skill body).
+#
+# Usage:
+#   bash scripts/validate-triggers [SKILL_DIR]
+#
+# If SKILL_DIR is omitted, defaults to the parent of scripts/ (the
+# skill directory containing this script).
+#
+# Exit codes:
+#   0  All triggers clean (no false-positive risk)
+#   1  One or more triggers match the skill body (false-positive risk)
+#   2  Error (missing SKILL.md, no triggers found)
+
+set -euo pipefail
+
+# Resolve skill directory
+if [ -n "${1:-}" ]; then
+  SKILL_DIR="$(cd "$1" && pwd)"
+else
+  SKILL_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+fi
+SKILL_FILE="$SKILL_DIR/SKILL.md"
+
+if [ ! -f "$SKILL_FILE" ]; then
+  echo "error: SKILL.md not found at $SKILL_FILE" >&2
+  exit 2
+fi
+
+# Extract the skill body (everything after the closing --- of frontmatter)
+body=$(awk '
+  /^---$/ { if (++delim == 2) { body = 1; next } next }
+  body { print }
+' "$SKILL_FILE")
+
+if [ -z "$body" ]; then
+  echo "warn: no body found after frontmatter in $SKILL_FILE" >&2
+  exit 0
+fi
+
+# Extract triggers (same parser as inject-context)
+triggers=$(awk '
+  /^---$/ { if (++delim == 2) exit; next }
+  delim == 1 && /^triggers:/ { in_triggers = 1; next }
+  in_triggers && /^[^ ]/ { exit }
+  in_triggers && /^  - match:/ {
+    m = $0
+    sub(/.*match: *"?/, "", m)
+    sub(/"? *$/, "", m)
+    current_match = m
+    next
+  }
+  in_triggers && /^    inject:/ {
+    i = $0
+    sub(/.*inject: *"?/, "", i)
+    sub(/"? *$/, "", i)
+    if (current_match != "" && i != "") {
+      print current_match "\t" i
+    }
+    current_match = ""
+    next
+  }
+' "$SKILL_FILE")
+
+if [ -z "$triggers" ]; then
+  echo "info: no triggers defined in $SKILL_FILE"
+  exit 0
+fi
+
+# Test each trigger pattern against the skill body
+failures=0
+total=0
+
+while IFS=$'\t' read -r pattern file; do
+  [ -z "$pattern" ] && continue
+  total=$((total + 1))
+
+  if echo "$body" | grep -qE "$pattern" 2>/dev/null; then
+    echo "FAIL  $pattern -> $file"
+    echo "      Pattern matches the skill body — will fire on every invocation"
+    # Show first matching line for context
+    match_line=$(echo "$body" | grep -m1 -nE "$pattern" 2>/dev/null || true)
+    if [ -n "$match_line" ]; then
+      echo "      First match: $match_line"
+    fi
+    failures=$((failures + 1))
+  else
+    echo "OK    $pattern -> $file"
+  fi
+done <<< "$triggers"
+
+echo ""
+echo "$total triggers checked, $failures false-positive risk(s)"
+
+if [ "$failures" -gt 0 ]; then
+  echo ""
+  echo "Triggers that match the skill body will fire on every invocation when"
+  echo "a pre-invocation hook receives the expanded prompt. Use subcommand-"
+  echo "anchored patterns (e.g. ^/skill subcommand) that cannot appear in the"
+  echo "skill body text."
+  exit 1
+fi

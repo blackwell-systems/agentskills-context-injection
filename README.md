@@ -116,6 +116,34 @@ Add to `~/.claude/settings.json`:
 
 The hook iterates all skill directories (`~/.claude/skills/`, `~/.agents/skills/`) and delegates to each skill's `scripts/inject-context`. Adding a new skill requires zero hook changes.
 
+## Validating Triggers
+
+Use `scripts/validate-triggers` to check trigger patterns for false-positive risk before deploying:
+
+```bash
+bash scripts/validate-triggers path/to/skill/
+```
+
+The script tests each trigger regex against the skill's own SKILL.md body. Patterns that match the body will fire on every invocation when a pre-invocation hook receives the expanded prompt:
+
+```
+$ bash scripts/validate-triggers examples/saw/
+OK    ^/saw program -> references/program-flow.md
+OK    ^/saw amend -> references/amend-flow.md
+
+2 triggers checked, 0 false-positive risk(s)
+```
+
+A failing check looks like:
+
+```
+FAIL  failure|blocked -> references/bad.md
+      Pattern matches the skill body — will fire on every invocation
+      First match: 4:When an agent reports failure or becomes blocked...
+```
+
+Run this after adding or changing triggers. Exit code 0 means clean, 1 means false-positive risk detected.
+
 ## Redundancy Model
 
 All three layers are active simultaneously:
