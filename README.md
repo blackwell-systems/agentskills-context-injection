@@ -3,15 +3,15 @@
 [![Blackwell Systems™](https://raw.githubusercontent.com/blackwell-systems/blackwell-docs-theme/main/badge-trademark.svg)](https://github.com/blackwell-systems)
 [![Agent Skills](assets/badge-agentskills.svg)](https://agentskills.io)
 
-The [Agent Skills](https://agentskills.io) spec defines a Resources tier for on-demand reference files but leaves loading to convention — the model decides when to load them. In practice, skills with multiple subcommand families face an impossible tradeoff: load all references upfront (wastes context budget on every invocation) or rely on the model to load selectively (misses files, improvises on logic it doesn't have).
+The [Agent Skills](https://agentskills.io) spec defines a Resources tier for on-demand reference files but leaves loading to convention - the model decides when to load them. In practice, skills with multiple subcommand families face an impossible tradeoff: load all references upfront (wastes context budget on every invocation) or rely on the model to load selectively (misses files, improvises on logic it doesn't have).
 
-This repo fixes that for dispatch-time subcommand routing. Skills declare which reference files to load for which subcommands. A pre-invocation hook loads them before the model starts — no model judgment required.
+This repo fixes that for dispatch-time subcommand routing. Skills declare which reference files to load for which subcommands. A pre-invocation hook loads them before the model starts - no model judgment required.
 
-Every major Agent Skills-compatible platform has independently built a pre-invocation hook: `UserPromptSubmit` (Claude Code), `BeforeAgent` (Gemini CLI), `UserPromptSubmit` (OpenAI Codex), `beforeSubmitPrompt` (Cursor), `chat.message` (OpenCode). The ecosystem has converged on this pattern. `triggers:` gives skill authors a single declaration that all conforming platforms can honor — rather than each platform requiring its own wiring.
+Every major Agent Skills-compatible platform has independently built a pre-invocation hook: `UserPromptSubmit` (Claude Code), `BeforeAgent` (Gemini CLI), `UserPromptSubmit` (OpenAI Codex), `beforeSubmitPrompt` (Cursor), `chat.message` (OpenCode). The ecosystem has converged on this pattern. `triggers:` gives skill authors a single declaration that all conforming platforms can honor - rather than each platform requiring its own wiring.
 
-**Scope: dispatch-time subcommand triggers only.** If you know at invocation time which subcommand is being called, this handles it deterministically. Mid-execution references that depend on runtime state (e.g. failure routing after agents report back) are out of scope — the hook fires before execution begins.
+**Scope: dispatch-time subcommand triggers only.** If you know at invocation time which subcommand is being called, this handles it deterministically. Mid-execution references that depend on runtime state (e.g. failure routing after agents report back) are out of scope - the hook fires before execution begins.
 
-> Works today via YAML extensibility — platforms that understand `triggers:` act on it, others ignore it. The proposal asks the spec to formally recognize `triggers:` as a top-level field. Reference implementation for Claude Code (`UserPromptSubmit`); the same pattern applies to Gemini CLI (`BeforeAgent`), OpenAI Codex (`UserPromptSubmit`), Cursor (`beforeSubmitPrompt`), and OpenCode (`chat.message`).
+> Works today via YAML extensibility - platforms that understand `triggers:` act on it, others ignore it. The proposal asks the spec to formally recognize `triggers:` as a top-level field. Reference implementation for Claude Code (`UserPromptSubmit`); the same pattern applies to Gemini CLI (`BeforeAgent`), OpenAI Codex (`UserPromptSubmit`), Cursor (`beforeSubmitPrompt`), and OpenCode (`chat.message`).
 
 ## How it works
 
@@ -26,7 +26,7 @@ bash scripts/inject-context "/saw program execute add caching"
 # outputs contents of references/program-flow.md
 ```
 
-One line in `SKILL.md`: "run `scripts/inject-context` with the user's prompt before proceeding." The model still decides what string to pass — this is model-initiated, not deterministically enforced. But it eliminates manual routing tables in SKILL.md and reduces accidental omissions.
+One line in `SKILL.md`: "run `scripts/inject-context` with the user's prompt before proceeding." The model still decides what string to pass - this is model-initiated, not deterministically enforced. But it eliminates manual routing tables in SKILL.md and reduces accidental omissions.
 
 **Layer 2 -- Hook (platform-native).** A pre-invocation hook runs the same script before the model sees the prompt. No model decision. The reference is in context when the model starts. Deterministic. Reference implementation ships for Claude Code (`UserPromptSubmit`); the same pattern applies to Gemini CLI (`BeforeAgent`), OpenAI Codex (`UserPromptSubmit`), Cursor (`beforeSubmitPrompt`), and OpenCode (`chat.message`).
 
@@ -51,7 +51,7 @@ triggers:
 - Multiple matches -> all matching references injected (concatenated)
 - No match -> no injection, zero overhead
 
-**Subcommand-anchored patterns only.** Pre-invocation hooks fire after skill body expansion — the full `SKILL.md` content is in the prompt, not just what the user typed. Keyword triggers like `failure|blocked` match against the skill's own instructions and fire on every invocation. Use patterns anchored to the invocation prefix (e.g. `^/saw program`, `^/saw amend`) that cannot appear in the skill body. Mid-execution references that depend on runtime state (failure routing, post-merge integration) are intentionally out of scope — they require runtime context that is not available at invocation time.
+**Subcommand-anchored patterns only.** Pre-invocation hooks fire after skill body expansion - the full `SKILL.md` content is in the prompt, not just what the user typed. Keyword triggers like `failure|blocked` match against the skill's own instructions and fire on every invocation. Use patterns anchored to the invocation prefix (e.g. `^/saw program`, `^/saw amend`) that cannot appear in the skill body. Mid-execution references that depend on runtime state (failure routing, post-merge integration) are intentionally out of scope - they require runtime context that is not available at invocation time.
 
 ### Trigger Format Constraints
 
@@ -138,7 +138,7 @@ A failing check looks like:
 
 ```
 FAIL  failure|blocked -> references/bad.md
-      Pattern matches the skill body — will fire on every invocation
+      Pattern matches the skill body - will fire on every invocation
       First match: 4:When an agent reports failure or becomes blocked...
 ```
 
@@ -166,9 +166,9 @@ This project uses existing Agent Skills conventions:
 - `scripts/` directory for executable code ([spec](https://agentskills.io/skill-creation/using-scripts))
 - `references/` directory for on-demand content ([spec](https://agentskills.io/specification#references))
 
-**Today:** `triggers:` is a top-level frontmatter field. The spec does not currently define it, but YAML parsers ignore unknown fields — platforms that understand `triggers:` act on it; those that don't ignore it with no behavior change. The alternative (`metadata: triggers:`) is a poor fit because the spec defines `metadata:` as a map of string key-value pairs, and `triggers:` requires structured list data.
+**Today:** `triggers:` is a top-level frontmatter field. The spec does not currently define it, but YAML parsers ignore unknown fields - platforms that understand `triggers:` act on it; those that don't ignore it with no behavior change. The alternative (`metadata: triggers:`) is a poor fit because the spec defines `metadata:` as a map of string key-value pairs, and `triggers:` requires structured list data.
 
-**The proposal:** Ask the spec to formally recognize `triggers:` as a top-level field intended for platform consumption — distinct from `metadata:` (passive author-defined data) because `triggers:` is read by platform hooks before the model runs, not passed through to the model as context.
+**The proposal:** Ask the spec to formally recognize `triggers:` as a top-level field intended for platform consumption - distinct from `metadata:` (passive author-defined data) because `triggers:` is read by platform hooks before the model runs, not passed through to the model as context.
 
 The constrained trigger format (see [Trigger Format Constraints](#trigger-format-constraints)) is a deliberate portability decision: any platform can implement a conforming parser without a YAML library. This keeps the standard accessible to implementations in any language or runtime.
 

@@ -1,4 +1,4 @@
-# Proposal Draft — agentskills/agentskills Issue
+# Proposal Draft - agentskills/agentskills Issue
 
 **Title:** `Proposal: triggers: frontmatter field for deterministic Resources tier loading`
 
@@ -8,7 +8,7 @@
 
 The spec defines a Resources tier for on-demand reference files and recommends
 keeping SKILL.md under 500 lines by moving detailed content to references/.
-But loading is convention-based — the model decides when to read them.
+But loading is convention-based - the model decides when to read them.
 
 For simple skills this works. For skills with multiple subcommand families
 and large reference files, it produces an impossible tradeoff:
@@ -36,7 +36,7 @@ pre-invocation hook that fires before the model processes the user's prompt:
 | OpenCode     | `chat.message`       |
 
 The ecosystem has converged on this pattern. What is missing is a standard
-declaration on the skill side — so authors write intent once and all
+declaration on the skill side - so authors write intent once and all
 conforming platforms honor it.
 
 ## Proposal
@@ -69,7 +69,7 @@ hook degrade gracefully to model-directed loading (existing behavior).
 
 ## Why top-level, not under metadata:
 
-`metadata:` is defined as a map of string key-value pairs — passive
+`metadata:` is defined as a map of string key-value pairs - passive
 author-defined data passed through to the model as context. `triggers:`
 is structurally different: it is a list of objects, and it is consumed
 by the platform hook before the model runs, not by the model itself.
@@ -81,7 +81,7 @@ that `triggers:` is platform-consumed operational data.
 
 Dispatch-time subcommand triggers only. The hook fires before the model
 runs, so `triggers:` can only act on information available at invocation
-time — the user's prompt. Mid-execution references that depend on runtime
+time - the user's prompt. Mid-execution references that depend on runtime
 state (agent outputs, failure conditions) are explicitly out of scope and
 should continue to use convention-based loading.
 
@@ -102,7 +102,7 @@ approaches produce identical results.
 
 ## Backward compatibility
 
-Platforms that do not implement `triggers:` ignore the field — standard
+Platforms that do not implement `triggers:` ignore the field - standard
 YAML behavior for unknown keys. No existing skills are affected.
 
 ## Reference implementation
@@ -110,14 +110,14 @@ YAML behavior for unknown keys. No existing skills are affected.
 https://github.com/blackwell-systems/agentskills-subcommand-dispatch
 
 Includes:
-- `scripts/inject-context` — portable bash script, reads `triggers:` and
+- `scripts/inject-context` - portable bash script, reads `triggers:` and
   injects matching references. Works on any platform via model instruction.
-- `hooks/inject_skill_context` — Claude Code `UserPromptSubmit` hook.
+- `hooks/inject_skill_context` - Claude Code `UserPromptSubmit` hook.
   Iterates all installed skills, delegates to each skill's inject-context.
   Zero changes required when adding new skills.
-- `scripts/validate-triggers` — checks trigger patterns against the skill
+- `scripts/validate-triggers` - checks trigger patterns against the skill
   body to detect false-positive risk before deployment.
-- `examples/saw/` — complete example from the Scout-and-Wave skill.
+- `examples/saw/` - complete example from the Scout-and-Wave skill.
 
 The implementation has been in production use in the Scout-and-Wave
 protocol (https://github.com/blackwell-systems/scout-and-wave) across

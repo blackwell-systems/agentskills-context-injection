@@ -19,7 +19,7 @@ The spec's Tier 1 (Metadata) loads skill names and descriptions at startup. But 
 
 Tier 0 provides a human-readable, always-loaded index that bridges this gap.
 
-Tier 0 is load-time routing — which skill to activate. Subcommand dispatch (Tier 3) is invocation-time routing — which reference files to load once the skill is active. Together they provide end-to-end progressive disclosure with no model judgment required at either layer.
+Tier 0 is load-time routing - which skill to activate. Subcommand dispatch (Tier 3) is invocation-time routing - which reference files to load once the skill is active. Together they provide end-to-end progressive disclosure with no model judgment required at either layer.
 
 ## Implementation: Project Config Files
 
@@ -79,7 +79,7 @@ With Tier 0, the full progressive disclosure stack is:
 | 3 | **Resources** | Reference files | Trigger match | Varies | `references/`, `scripts/`, `assets/` |
 
 The Discovery layer and the Metadata tier are both loaded at startup, but they serve different audiences:
-- **Discovery** is for the user and the model's routing logic — "what skills exist and when to use them"
+- **Discovery** is for the user and the model's routing logic - "what skills exist and when to use them"
 - **Tier 1** is for the agent harness --structured metadata for catalog building and tool registration
 
 ## Tier 0 as a Multi-Skill Index
