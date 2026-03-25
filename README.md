@@ -7,9 +7,11 @@ The [Agent Skills](https://agentskills.io) spec defines a Resources tier for on-
 
 This repo fixes that for dispatch-time subcommand routing. Skills declare which reference files to load for which subcommands. A pre-invocation hook loads them before the model starts — no model judgment required.
 
+Every major Agent Skills-compatible platform has independently built a pre-invocation hook: `UserPromptSubmit` (Claude Code), `BeforeAgent` (Gemini CLI), `UserPromptSubmit` (OpenAI Codex), `beforeSubmitPrompt` (Cursor), `chat.message` (OpenCode). The ecosystem has converged on this pattern. `triggers:` gives skill authors a single declaration that all conforming platforms can honor — rather than each platform requiring its own wiring.
+
 **Scope: dispatch-time subcommand triggers only.** If you know at invocation time which subcommand is being called, this handles it deterministically. Mid-execution references that depend on runtime state (e.g. failure routing after agents report back) are out of scope — the hook fires before execution begins.
 
-> Uses existing Agent Skills conventions (`scripts/`, `references/`, `metadata:`). No spec changes required. Reference implementation for Claude Code (`UserPromptSubmit`) and Gemini CLI (`BeforeAgent`).
+> Uses existing Agent Skills conventions (`scripts/`, `references/`, `metadata:`). No spec changes required. Reference implementation for Claude Code (`UserPromptSubmit`).
 
 ## How it works
 
@@ -26,7 +28,7 @@ bash scripts/inject-context "/saw program execute add caching"
 
 One line in `SKILL.md`: "run `scripts/inject-context` with the user's prompt before proceeding." The model still decides what string to pass — this is model-initiated, not enforced. But it is simpler than a routing table and harder to accidentally skip.
 
-**Layer 2 -- Hook (Claude Code).** A `UserPromptSubmit` hook runs the same script before the model sees the prompt. No model decision. The reference is in context when the model starts. Deterministic.
+**Layer 2 -- Hook (platform-native).** A pre-invocation hook runs the same script before the model sees the prompt. No model decision. The reference is in context when the model starts. Deterministic. Reference implementation ships for Claude Code (`UserPromptSubmit`); the same pattern applies to Gemini CLI (`BeforeAgent`), OpenAI Codex (`UserPromptSubmit`), Cursor (`beforeSubmitPrompt`), and OpenCode (`chat.message`).
 
 ## Trigger Definitions
 
@@ -49,7 +51,7 @@ triggers:
 - Multiple matches -> all matching references injected (concatenated)
 - No match -> no injection, zero overhead
 
-**Subcommand-anchored patterns only.** Pre-invocation hooks (`UserPromptSubmit` in Claude Code, `BeforeAgent` in Gemini CLI) fire after skill body expansion — the full `SKILL.md` content is in the prompt, not just what the user typed. Keyword triggers like `failure|blocked` match against the skill's own instructions and fire on every invocation. Use patterns anchored to the invocation prefix (e.g. `^/saw program`, `^/saw amend`) that cannot appear in the skill body. Mid-execution references that depend on runtime state (failure routing, post-merge integration) should stay convention-based — hooks fire too early for them.
+**Subcommand-anchored patterns only.** Pre-invocation hooks fire after skill body expansion — the full `SKILL.md` content is in the prompt, not just what the user typed. Keyword triggers like `failure|blocked` match against the skill's own instructions and fire on every invocation. Use patterns anchored to the invocation prefix (e.g. `^/saw program`, `^/saw amend`) that cannot appear in the skill body. Mid-execution references that depend on runtime state (failure routing, post-merge integration) should stay convention-based — hooks fire too early for them.
 
 ## Installation
 
@@ -70,7 +72,7 @@ Before executing any subcommand, run:
 and incorporate the output as context.
 ```
 
-### The Claude Code hook (optional, Claude Code only)
+### The platform hook (optional, deterministic enforcement)
 
 ```bash
 # Install the hook script
@@ -107,6 +109,9 @@ All three layers are active simultaneously:
 |-------|-----------|----------|-------------|
 | Hook | `UserPromptSubmit` | Claude Code | Deterministic (pre-model) |
 | Hook | `BeforeAgent` | Gemini CLI | Deterministic (pre-model) |
+| Hook | `UserPromptSubmit` | OpenAI Codex | Deterministic (pre-model) |
+| Hook | `beforeSubmitPrompt` | Cursor | Deterministic (pre-model) |
+| Hook | `chat.message` | OpenCode | Deterministic (pre-model) |
 | Script | `scripts/inject-context` | Any agent with Bash | Model-initiated |
 | Fallback | Routing table in SKILL.md | Any agent | Convention-based |
 
