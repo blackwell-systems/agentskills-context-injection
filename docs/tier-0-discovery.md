@@ -86,11 +86,11 @@ In a project with multiple skills, Tier 0 acts as a table of contents. The model
 
 For a project with 10 installed skills, the cost is ~200-500 tokens for the full index --compared to 50,000+ tokens if all 10 skill bodies loaded at once. The index pays for itself on the first invocation.
 
-## Relationship to Context Injection
+## Relationship to Subcommand Dispatch
 
-Tier 0 complements context injection --they operate at different points in the lifecycle:
+Tier 0 complements subcommand dispatch --they operate at different points in the lifecycle:
 
 1. **Tier 0** helps the model identify which skill to activate (pre-activation)
-2. **Context injection** loads the right reference files once a skill is activated (post-activation, pre-execution)
+2. **Subcommand dispatch** loads the right reference files once a skill is activated (post-activation, pre-execution)
 
-Without Tier 0, the model may not activate the skill at all. Without context injection, the model may activate the skill but miss critical reference material. Both are needed for reliable end-to-end progressive disclosure.
+Without Tier 0, the model may not activate the skill at all. Without subcommand dispatch, the model may activate the skill but miss critical reference material. Both are needed for reliable end-to-end progressive disclosure.

@@ -3,11 +3,13 @@
 [![Blackwell Systems™](https://raw.githubusercontent.com/blackwell-systems/blackwell-docs-theme/main/badge-trademark.svg)](https://github.com/blackwell-systems)
 [![Agent Skills](assets/badge-agentskills.svg)](https://agentskills.io)
 
-The [Agent Skills](https://agentskills.io) spec tells skills to put reference material in `references/` and let the model load it "when needed." In practice, the model forgets, loads the wrong file, or loads everything upfront. There's no enforcement.
+The [Agent Skills](https://agentskills.io) spec defines a Resources tier for on-demand reference files but leaves loading to convention — the model decides when to load them. In practice, skills with multiple subcommand families face an impossible tradeoff: load all references upfront (wastes context budget on every invocation) or rely on the model to load selectively (misses files, improvises on logic it doesn't have).
 
-This repo fixes that. Skills declare which references to load for which prompts, and a script handles the rest.
+This repo fixes that for dispatch-time subcommand routing. Skills declare which reference files to load for which subcommands. A pre-invocation hook loads them before the model starts — no model judgment required.
 
-> Uses existing Agent Skills conventions (`scripts/`, `references/`, `metadata:`). No spec changes. Works with Claude Code, Cursor, GitHub Copilot, and anything else that supports the spec.
+**Scope: dispatch-time subcommand triggers only.** If you know at invocation time which subcommand is being called, this handles it deterministically. Mid-execution references that depend on runtime state (e.g. failure routing after agents report back) are out of scope — the hook fires before execution begins.
+
+> Uses existing Agent Skills conventions (`scripts/`, `references/`, `metadata:`). No spec changes required. Reference implementation for Claude Code (`UserPromptSubmit`) and Gemini CLI (`beforeAgent`).
 
 ## How it works
 
@@ -117,7 +119,7 @@ This project uses only conventions the Agent Skills spec already defines:
 - `references/` directory for on-demand content ([spec](https://agentskills.io/specification#references))
 - Frontmatter extensibility for custom fields ([spec](https://agentskills.io/specification#metadata-field))
 
-The `triggers:` field is skill-specific metadata using the spec's existing extensibility. Agents that don't understand `triggers:` simply ignore it.
+The `triggers:` field is declared at the top level of the skill frontmatter rather than nested under `metadata:`. Top-level placement signals that it is intended for platform consumption — the hook reads it before the model runs — not just passive skill metadata. Agents that don't understand `triggers:` ignore it with no behavior change.
 
 ## The Four-Tier Model
 
