@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# inject-context — vendor-neutral context injection for Agent Skills
+# inject-context — Agent Skills subcommand dispatch via portable trigger declarations
 #
 # Reads trigger patterns from the parent skill's SKILL.md frontmatter,
 # matches them against the user's prompt, and outputs the contents of

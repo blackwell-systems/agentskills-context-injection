@@ -10,7 +10,7 @@ triggers:
 
 # Scout-and-Wave: Parallel Agent Coordination
 
-This is an example frontmatter showing how SAW declares triggers for context injection.
+This is an example frontmatter showing how SAW declares triggers for subcommand dispatch routing.
 
 The `triggers:` block tells `scripts/inject-context` which reference files to load based on the user's prompt. For example:
 

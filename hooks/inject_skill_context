@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# inject_skill_context — Claude Code UserPromptSubmit hook
+# inject_skill_context — pre-invocation hook for Agent Skills subcommand dispatch
+# Claude Code reference implementation (UserPromptSubmit)
 #
 # Iterates all installed skills, delegates to each skill's
 # scripts/inject-context, and returns combined results as

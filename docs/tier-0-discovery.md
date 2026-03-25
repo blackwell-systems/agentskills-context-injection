@@ -19,6 +19,8 @@ The spec's Tier 1 (Metadata) loads skill names and descriptions at startup. But 
 
 Tier 0 provides a human-readable, always-loaded index that bridges this gap.
 
+Tier 0 is load-time routing — which skill to activate. Subcommand dispatch (Tier 3) is invocation-time routing — which reference files to load once the skill is active. Together they provide end-to-end progressive disclosure with no model judgment required at either layer.
+
 ## Implementation: Project Config Files
 
 Most AI coding tools load a project configuration file at session start --before any skill is activated, before any user message is processed:

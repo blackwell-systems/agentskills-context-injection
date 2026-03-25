@@ -11,7 +11,7 @@ Every major Agent Skills-compatible platform has independently built a pre-invoc
 
 **Scope: dispatch-time subcommand triggers only.** If you know at invocation time which subcommand is being called, this handles it deterministically. Mid-execution references that depend on runtime state (e.g. failure routing after agents report back) are out of scope — the hook fires before execution begins.
 
-> Uses existing Agent Skills conventions (`scripts/`, `references/`, `metadata:`). No spec changes required. Reference implementation for Claude Code (`UserPromptSubmit`).
+> Uses existing Agent Skills conventions (`scripts/`, `references/`, `metadata:`). Spec-level proposal with reference implementation for Claude Code (`UserPromptSubmit`); the same pattern applies directly to Gemini CLI (`BeforeAgent`), OpenAI Codex (`UserPromptSubmit`), Cursor (`beforeSubmitPrompt`), and OpenCode (`chat.message`).
 
 ## How it works
 
@@ -26,7 +26,7 @@ bash scripts/inject-context "/saw program execute add caching"
 # outputs contents of references/program-flow.md
 ```
 
-One line in `SKILL.md`: "run `scripts/inject-context` with the user's prompt before proceeding." The model still decides what string to pass — this is model-initiated, not enforced. But it is simpler than a routing table and harder to accidentally skip.
+One line in `SKILL.md`: "run `scripts/inject-context` with the user's prompt before proceeding." The model still decides what string to pass — this is model-initiated, not deterministically enforced. But it eliminates manual routing tables in SKILL.md and reduces accidental omissions.
 
 **Layer 2 -- Hook (platform-native).** A pre-invocation hook runs the same script before the model sees the prompt. No model decision. The reference is in context when the model starts. Deterministic. Reference implementation ships for Claude Code (`UserPromptSubmit`); the same pattern applies to Gemini CLI (`BeforeAgent`), OpenAI Codex (`UserPromptSubmit`), Cursor (`beforeSubmitPrompt`), and OpenCode (`chat.message`).
 
@@ -51,11 +51,11 @@ triggers:
 - Multiple matches -> all matching references injected (concatenated)
 - No match -> no injection, zero overhead
 
-**Subcommand-anchored patterns only.** Pre-invocation hooks fire after skill body expansion — the full `SKILL.md` content is in the prompt, not just what the user typed. Keyword triggers like `failure|blocked` match against the skill's own instructions and fire on every invocation. Use patterns anchored to the invocation prefix (e.g. `^/saw program`, `^/saw amend`) that cannot appear in the skill body. Mid-execution references that depend on runtime state (failure routing, post-merge integration) should stay convention-based — hooks fire too early for them.
+**Subcommand-anchored patterns only.** Pre-invocation hooks fire after skill body expansion — the full `SKILL.md` content is in the prompt, not just what the user typed. Keyword triggers like `failure|blocked` match against the skill's own instructions and fire on every invocation. Use patterns anchored to the invocation prefix (e.g. `^/saw program`, `^/saw amend`) that cannot appear in the skill body. Mid-execution references that depend on runtime state (failure routing, post-merge integration) are intentionally out of scope — they require runtime context that is not available at invocation time.
 
 ### Trigger Format Constraints
 
-The `triggers` field uses a **portable subset** of YAML designed for reliable parsing across implementations without requiring a full YAML library:
+The `triggers` field uses a **portable subset** of YAML as a spec conformance requirement, ensuring reliable parsing across implementations without requiring a full YAML library:
 
 - Flat list of `{match, inject}` entries only
 - Single-line scalar values -- no multi-line strings, no block scalars (`|`, `>`)
@@ -66,7 +66,7 @@ The `triggers` field uses a **portable subset** of YAML designed for reliable pa
 
 This is a deliberate interoperability boundary. The reference parser (`scripts/inject-context`) uses awk to extract triggers without external dependencies. Implementations that use a full YAML parser will handle this subset correctly; implementations that use lightweight parsing (awk, regex, line-oriented) can also conform. The constraint ensures both approaches produce identical results.
 
-Triggers that violate these constraints (multi-line patterns, anchored references) are not portable and may silently fail in lightweight implementations.
+Triggers that do not conform to the portable format (multi-line patterns, anchored references) may not be correctly parsed by lightweight implementations and should be avoided for cross-platform compatibility.
 
 ## Installation
 
@@ -128,7 +128,7 @@ All three layers are active simultaneously:
 | Hook | `beforeSubmitPrompt` | Cursor | Deterministic (pre-model) |
 | Hook | `chat.message` | OpenCode | Deterministic (pre-model) |
 | Script | `scripts/inject-context` | Any agent with Bash | Model-initiated |
-| Fallback | Routing table in SKILL.md | Any agent | Convention-based |
+| Prose routing | Explicit routing instructions in SKILL.md | Any agent | Skill-author-directed |
 
 Users get the best available layer. No regression at any level.
 
