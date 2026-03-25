@@ -32,14 +32,15 @@ if [ ! -f "$SKILL_FILE" ]; then
   exit 1
 fi
 
-# Extract triggers from YAML frontmatter using awk.
+# Extract triggers from YAML frontmatter.
 # Outputs tab-separated lines: <regex>\t<inject-path>
-# Handles both quoted and unquoted YAML values.
 #
-# Known limitation: awk-based YAML parsing is fragile. It handles the
-# expected trigger structure (two-field list items with match/inject keys)
-# but will silently fail on multi-line values, complex escaping, or YAML
-# anchors. A production implementation should use a proper YAML parser.
+# The triggers format is intentionally constrained for portability:
+#   - Flat list of {match, inject} entries only
+#   - Single-line scalar values (no multi-line, no anchors/aliases)
+#   - match: and inject: on consecutive lines within a list item
+# This is a deliberate interoperability boundary, not a parser limitation.
+# See README § Trigger Format Constraints.
 triggers=$(awk '
   /^---$/ { if (++delim == 2) exit; next }
   delim == 1 && /^triggers:/ { in_triggers = 1; next }

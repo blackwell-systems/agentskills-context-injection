@@ -53,6 +53,21 @@ triggers:
 
 **Subcommand-anchored patterns only.** Pre-invocation hooks fire after skill body expansion — the full `SKILL.md` content is in the prompt, not just what the user typed. Keyword triggers like `failure|blocked` match against the skill's own instructions and fire on every invocation. Use patterns anchored to the invocation prefix (e.g. `^/saw program`, `^/saw amend`) that cannot appear in the skill body. Mid-execution references that depend on runtime state (failure routing, post-merge integration) should stay convention-based — hooks fire too early for them.
 
+### Trigger Format Constraints
+
+The `triggers` field uses a **portable subset** of YAML designed for reliable parsing across implementations without requiring a full YAML library:
+
+- Flat list of `{match, inject}` entries only
+- Single-line scalar values -- no multi-line strings, no block scalars (`|`, `>`)
+- No YAML anchors (`&`), aliases (`*`), or tags (`!!`)
+- No nested objects within trigger entries
+- `match` and `inject` on consecutive lines within each list item
+- Values may be quoted (`"..."`) or unquoted
+
+This is a deliberate interoperability boundary. The reference parser (`scripts/inject-context`) uses awk to extract triggers without external dependencies. Implementations that use a full YAML parser will handle this subset correctly; implementations that use lightweight parsing (awk, regex, line-oriented) can also conform. The constraint ensures both approaches produce identical results.
+
+Triggers that violate these constraints (multi-line patterns, anchored references) are not portable and may silently fail in lightweight implementations.
+
 ## Installation
 
 ### The injection script (any skill)
@@ -126,6 +141,8 @@ This project uses only conventions the Agent Skills spec already defines:
 
 The `triggers:` field is declared at the top level of the skill frontmatter rather than nested under `metadata:`. Top-level placement signals that it is intended for platform consumption — the hook reads it before the model runs — not just passive skill metadata. Agents that don't understand `triggers:` ignore it with no behavior change.
 
+The constrained trigger format (see [Trigger Format Constraints](#trigger-format-constraints)) is itself a spec-level decision: by restricting `triggers:` to a portable subset of YAML, any platform can implement a conforming parser without a YAML library dependency. This keeps the standard accessible to implementations in any language or runtime.
+
 ## The Four-Tier Model
 
 The Agent Skills spec defines three tiers. This project documents a fourth — **Tier 0 (Discovery)** — that sits outside the skill in project config files (`CLAUDE.md`, `.cursorrules`, etc.):
@@ -135,7 +152,7 @@ The Agent Skills spec defines three tiers. This project documents a fourth — *
 | 0 — Discovery | Skill index in project config | Session start (always in context) |
 | 1 — Metadata | Name + description from frontmatter | Session start (catalog) |
 | 2 — Instructions | Full SKILL.md body | Skill activation |
-| 3 — Resources | Reference files via triggers | **Context injection** (this project) |
+| 3 — Resources | Reference files via triggers | **Subcommand dispatch** (this project) |
 
 See [`docs/tier-0-discovery.md`](docs/tier-0-discovery.md) for the full Tier 0 pattern.
 
