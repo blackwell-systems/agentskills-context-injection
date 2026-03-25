@@ -135,6 +135,19 @@ This project uses only conventions the Agent Skills spec already defines:
 
 The `triggers:` field is skill-specific metadata using the spec's existing extensibility. Agents that don't understand `triggers:` simply ignore it.
 
+## The Four-Tier Model
+
+The Agent Skills spec defines three tiers. This project documents a fourth — **Tier 0 (Discovery)** — that sits outside the skill in project config files (`CLAUDE.md`, `.cursorrules`, etc.):
+
+| Tier | What | When loaded |
+|------|------|-------------|
+| 0 — Discovery | Skill index in project config | Session start (always in context) |
+| 1 — Metadata | Name + description from frontmatter | Session start (catalog) |
+| 2 — Instructions | Full SKILL.md body | Skill activation |
+| 3 — Resources | Reference files via triggers | **Context injection** (this project) |
+
+See [`docs/tier-0-discovery.md`](docs/tier-0-discovery.md) for the full Tier 0 pattern.
+
 ## Example
 
 See [`examples/saw/`](examples/saw/) for the Scout-and-Wave skill's trigger configuration.
